@@ -38,12 +38,15 @@ public class Main {
             int cols = bufferImages.getInt();
 
             for(int i = 0; i < numberOfItems /*numberOfItems*/; i++) {
-                int t = bufferLabels.get();
+                int t = bufferLabels.get() & 0xFF;
+                //System.out.println("Label: " + t);
                 double[] target = createTargets(t, 10);
                 //double[] target = new double[]{bufferLabels.get()};
                 double[] inputs = new double[rows*cols];
                 for(int j = 0; j < inputs.length; j++) {
-                    inputs[j] = bufferImages.get();
+                    double temp = (bufferImages.get() & 0xFF) / 255f;
+                    inputs[j] = temp;
+                    //System.out.println(inputs[j]);
                 }
                 Data tobj = new Data(inputs, target);
                 trainData.add(tobj);
@@ -63,14 +66,16 @@ public class Main {
             int testRows = testImageBuffer.getInt();
             int testCols = testImageBuffer.getInt();
 
-            for(int i = 0; i < numberOfTestImages /*numberOfItems*/; i++) {
+            for(int i = 0; i < numberOfTestImages; i++) {
                 //int t = testLabelBuffer.get();
                 //double[] target = createTargets(t, 10);
 
-                double[] target = new double[]{testLabelBuffer.get()};
+                double[] target = new double[]{testLabelBuffer.get()& 0xFF};
                 double[] inputs = new double[testRows*testCols];
                 for(int j = 0; j < inputs.length; j++) {
-                    inputs[j] = testImageBuffer.get();
+                    // Normalize input from 0-255 to 0-1
+                    double temp = (testImageBuffer.get() & 0xFF) / 255f;
+                    inputs[j] = temp;
                 }
                 Data tobj = new Data(inputs, target);
                 testData.add(tobj);
@@ -80,16 +85,19 @@ public class Main {
 
             int len = trainData.size();
             Random randomGenerator = new Random();
-            for(int i = 0; i < 400000; i++) {
+            for(int i = 0; i < 100000; i++) {
                int randomInt = randomGenerator.nextInt(len);
                 neuralNetwork.train(trainData.get(randomInt).getInputs(), trainData.get(randomInt).getTargets());
             }
 
             float rightAnswers = 0;
+            float numberOfGuesses = 0;
 
             for(Data testObj : testData) {
                 double[] output = neuralNetwork.feedforward(testObj.getInputs());
                 double[] answer = testObj.getTargets();
+                //System.out.println(Arrays.toString(output));
+                //System.out.println(Arrays.toString(answer));
                 List<Double> tempList = new ArrayList<>();
 
                 for(double d : output)
@@ -102,10 +110,11 @@ public class Main {
                 if(index == answer[0]) {
                     rightAnswers++;
                 }
+                numberOfGuesses ++;
 
             }
 
-            float percentage = rightAnswers / 100f;
+            float percentage = rightAnswers / numberOfGuesses;
             System.out.println(percentage);
         } catch (IOException e) {
             e.printStackTrace();
